@@ -581,6 +581,7 @@ llvm::Value* ASTAllocExpr::codegen() {
   if(dynamic_cast<ASTRecordExpr *>(getInitializer())){
       argSize = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
       argType = ptrToUberRecordType;
+      argVal = Builder.CreateLoad(ptrToUberRecordType, argVal, "recordPtr");
   }
   else{
       argSize = 8;
@@ -592,7 +593,7 @@ llvm::Value* ASTAllocExpr::codegen() {
   auto *castPtr = Builder.CreatePointerCast(
       allocInst, argType, "castPtr"); //%uberRecord* %castPtr
   // Initialize with argument
-  auto *initializingStore = Builder.CreateStore(argVal, castPtr);
+  //auto *initializingStore = Builder.CreateStore(argVal, castPtr);
 
   return Builder.CreatePtrToInt(argVal, Type::getInt64Ty(TheContext),
                                 "allocIntVal");
