@@ -582,9 +582,13 @@ llvm::Value* ASTAllocExpr::codegen() {
       argSize = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
       argType = ptrToUberRecordType;
 <<<<<<< HEAD
+<<<<<<< HEAD
       argVal = Builder.CreateLoad(ptrToUberRecordType, argVal, "recordPtr");
 =======
 >>>>>>> Adding alloc records
+=======
+      argVal = Builder.CreateLoad(ptrToUberRecordType, argVal, "recordPtr");
+>>>>>>> Added load instruction in alloc
   }
   else{
       argSize = 8;
