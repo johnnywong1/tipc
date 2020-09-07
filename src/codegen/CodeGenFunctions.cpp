@@ -581,7 +581,10 @@ llvm::Value* ASTAllocExpr::codegen() {
   if(dynamic_cast<ASTRecordExpr *>(getInitializer())){
       argSize = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
       argType = ptrToUberRecordType;
+<<<<<<< HEAD
       argVal = Builder.CreateLoad(ptrToUberRecordType, argVal, "recordPtr");
+=======
+>>>>>>> Adding alloc records
   }
   else{
       argSize = 8;
@@ -670,10 +673,13 @@ llvm::Value* ASTRecordExpr::codegen() {
   // Use Builder to create the calloc call using pre-defined callocFun
   auto sizeOfUberRecord = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
 <<<<<<< HEAD
+<<<<<<< HEAD
   std::vector<Value *> callocArgs;
   callocArgs.push_back(oneV); 
   callocArgs.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), sizeOfUberRecord));
   auto *calloc = Builder.CreateCall(callocFun, callocArgs, "callocedPtr");
+=======
+>>>>>>> Adding alloc records
 =======
 >>>>>>> Adding alloc records
 

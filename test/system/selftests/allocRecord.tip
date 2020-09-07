@@ -2,5 +2,9 @@ main(){
     var a;
     a = alloc {b:1, c:3};
 
+<<<<<<< HEAD
     return 0;
+=======
+    return (*a).c;
+>>>>>>> Adding alloc records
 }
