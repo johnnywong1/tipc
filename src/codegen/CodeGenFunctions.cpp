@@ -117,6 +117,8 @@ int labelNum = 0;
 // Indicate whether the expression code gen is for an L-value
 bool lValueGen = false;
 
+bool allocGen = false;
+
 /*
  * The global function dispatch table is created in a shallow pass over
  * the function signatures, stored here, and then referenced in generating
@@ -571,7 +573,8 @@ llvm::Value* ASTFunAppExpr::codegen() {
 }
 
 llvm::Value* ASTAllocExpr::codegen() {
-  Value *argVal = getInitializer()->codegen();
+  allocGen = true;
+  Value *argVal = getInitializer()->codegen(); //%uberRecord** %0
   if (argVal == nullptr) {
     return nullptr;
   }
@@ -579,15 +582,25 @@ llvm::Value* ASTAllocExpr::codegen() {
   // TBD TYPE CHECKING - this needs upating
   // Since we do not support records all allocs are for 8 bytes, i.e., int64_t
   std::vector<Value *> twoArg;
+  u_int64_t argSize;
+  Type *argType;
+  if(dynamic_cast<ASTRecordExpr *>(getInitializer())){
+      argSize = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
+      argType = ptrToUberRecordType;
+  }
+  else{
+      argSize = 8;
+      argType = Type::getInt64PtrTy(TheContext);
+  }
   twoArg.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 1));
-  twoArg.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 8));
+  twoArg.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), argSize));
   auto *allocInst = Builder.CreateCall(callocFun, twoArg, "allocPtr");
   auto *castPtr = Builder.CreatePointerCast(
-      allocInst, Type::getInt64PtrTy(TheContext), "castPtr");
+      allocInst, argType, "castPtr"); //%uberRecord* %castPtr
   // Initialize with argument
   auto *initializingStore = Builder.CreateStore(argVal, castPtr);
 
-  return Builder.CreatePtrToInt(castPtr, Type::getInt64Ty(TheContext),
+  return Builder.CreatePtrToInt(argVal, Type::getInt64Ty(TheContext),
                                 "allocIntVal");
 }
 
@@ -654,22 +667,29 @@ llvm::Value* ASTDeRefExpr::codegen() {
  * Builds an instance of the UberRecord using the declared fields
  */
 llvm::Value* ASTRecordExpr::codegen() {
+  bool isAlloc = allocGen;
+  if(allocGen){
+      allocGen = false;
+  }
   //Allocate the a pointer to an uber record
   auto *allocaRecord = Builder.CreateAlloca(ptrToUberRecordType);
 
   // Use Builder to create the calloc call using pre-defined callocFun
   auto sizeOfUberRecord = CurrentModule->getDataLayout().getStructLayout(uberRecordType)->getSizeInBytes();
-  std::vector<Value *> callocArgs;
-  callocArgs.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 1));
-  callocArgs.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), sizeOfUberRecord));
-  auto *calloc = Builder.CreateCall(callocFun, callocArgs, "callocedPtr");
 
-  //Bitcast the calloc call to theStruct Type
-  auto *recordPtr = Builder.CreatePointerCast(calloc, ptrToUberRecordType, "recordCalloc");
+  llvm::Value *recordPtr;
+  if(!isAlloc) {
+      std::vector<Value *> callocArgs;
+      callocArgs.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 1));
+      callocArgs.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), sizeOfUberRecord));
+      auto *calloc = Builder.CreateCall(callocFun, callocArgs, "callocedPtr");
 
-  //Store the ptr to the record in the record alloc
-  Builder.CreateStore(recordPtr, allocaRecord);
+      //Bitcast the calloc call to theStruct Type
+      recordPtr = Builder.CreatePointerCast(calloc, ptrToUberRecordType, "recordCalloc");
 
+      //Store the ptr to the record in the record alloc
+      Builder.CreateStore(recordPtr, allocaRecord);
+  }
   //Load allocaRecord
   auto loadInst = Builder.CreateLoad(ptrToUberRecordType,allocaRecord);
 
@@ -682,7 +702,12 @@ llvm::Value* ASTRecordExpr::codegen() {
   }
 
   //Return int64 pointer to the record
-  return Builder.CreatePtrToInt(recordPtr, Type::getInt64Ty(TheContext), "recordPtr");
+  if(!isAlloc){
+      return Builder.CreatePtrToInt(recordPtr, Type::getInt64Ty(TheContext), "recordPtr");
+  }
+  else{
+      return allocaRecord;
+  }
 }
 
 /* field : val field expression
