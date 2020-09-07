@@ -2,5 +2,5 @@ main(){
     var a;
     a = alloc {b:1, c:3};
 
-    return (*a).c;
+    return 0;
 }
