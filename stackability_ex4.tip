@@ -1,0 +1,10 @@
+main(max) {
+  var i, h;
+  i = 0;
+  h = null;
+  while (max > i) {
+    h = alloc h;
+    i = i + 1;
+  }
+  return 0;
+}

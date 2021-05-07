@@ -1,0 +1,15 @@
+get(p) {
+ return *p;
+}
+
+main(n) {
+  var s,p;
+  s = 0;
+  p = alloc 0;
+  while (n > 0) {
+    *p = 2;
+    s = s + get(p);
+    n = n - 1;
+  }
+  return s;
+}

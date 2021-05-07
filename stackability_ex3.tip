@@ -1,0 +1,15 @@
+ident(x) {
+ var p;
+ p = alloc x;
+ return *p;
+}
+
+main(n) {
+  var s;
+  s = 0;
+  while (n > 0) {
+    s = s + ident(2);
+    n = n - 1;
+  }
+  return s;
+}
