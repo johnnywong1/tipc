@@ -26,6 +26,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm-c/TargetMachine.h"
+#include "llvm/Analysis/CaptureTracking.h"
 
 using namespace llvm;
 
@@ -567,9 +568,22 @@ llvm::Value* ASTFunAppExpr::codegen() {
 
 llvm::Value* ASTAllocExpr::codegen() {
   Value *argVal = getInitializer()->codegen();
+  std::cout << "YO";
   if (argVal == nullptr) {
     throw InternalError("failed to generate bitcode for the initializer of the alloc expression");
   }
+
+  if (!llvm::PointerMayBeCaptured(argVal, false, false)){
+      std::cout << "Not Captured; use stack alloc" << std::endl;
+      AllocaInst* allocInst = Builder.CreateAlloca(Type::getInt64Ty(TheContext), argVal);
+      // Switch to correct one FIRST!!!
+      // auto* initializeStore = Builder.CreateStore(argVal, allocInst);
+      // auto* initializeStore = Builder.CreateStore((Value *)allocInst, argVal);
+      auto* initializeStore = Builder.CreateStore(argVal, allocInst);
+
+      return Builder.CreatePtrToInt(allocInst, Type::getInt64Ty(TheContext), "allocInstName");
+  }
+  std::cout << "Captured; use default heap" << std::endl;
 
   // Since we do not support records all allocs are for 8 bytes, i.e., int64_t
   std::vector<Value *> twoArg;
